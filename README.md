@@ -32,11 +32,21 @@ Hades is an independent Flutter codebase written for this project.
 - Sleep timer: 15 minutes to 2 hours, or end of the current track
 - Playback speed from 0.5× to 2×, skip-silence, and 2–8 second crossfade
 - Synced and plain lyrics from [LRCLIB](https://lrclib.net), with tap-to-seek,
-  ±0.5 s timing offset, full-screen mode, and copy to clipboard
+  ±0.5 s timing offset, full-screen mode, copy, word-by-word highlighting, and
+  optional AI translation
 - SponsorBlock auto-skip and Return YouTube Dislike counts
 - Ten-band device equalizer with presets and a custom curve
 - Listening stats: plays, top artists and tracks, a 14-day chart, a listening
   clock, and a period recap
+
+### Hades rituals (unique to Hades)
+
+- **Today's Descent** — a once-a-day discovery mix built from your own orbit,
+  cached for the day, with a listening streak and an animated underworld sigil
+- **Time machine** — every track you played on this date in past years, grouped
+  by year and playable as one memory queue
+- **AI DJ** — a private set shaped by your favorites, history, and a mood, using
+  your own Gemini or OpenAI key and real YouTube Music searches
 
 ### Library
 
@@ -183,7 +193,8 @@ no API key or account is required.
 Hades covers SimpMusic's core listening loop: YouTube Music browsing, search,
 podcasts, charts, moods, playlists, lyrics, downloads, SponsorBlock, Return
 YouTube Dislike, a device equalizer, crossfade, playback speed, listening stats,
-and a period recap, with namida-style customization on top.
+and a period recap, with namida-style customization on top. It also adds
+rituals SimpMusic does not have: Today's Descent and the Time machine.
 
 Some SimpMusic features need a Google account, a paid API, or native Android
 surfaces that a single Flutter pass cannot provide. These are not in Hades yet:
@@ -193,7 +204,6 @@ surfaces that a single Flutter pass cannot provide. These are not in Hades yet:
 - SimpMusic Wrapped artwork sharing, monthly recap playlists, and chart API
 - Home-screen widgets, Android Auto, Cast, and Discord Rich Presence
 - Last.fm scrobbling, Listen Together rooms, and artist notifications
-- AI song suggestions and AI lyrics translation (bring-your-own API key)
 - Spotify Canvas animated art, 1080p video playback, and live stations
 - AutoEq headphone profiles, delay/reverb effects, and Desktop/TV builds
 - Word-by-word lyrics, romanization, and translated lyrics
@@ -203,7 +213,9 @@ surfaces that a single Flutter pass cannot provide. These are not in Hades yet:
 Hades has no analytics, tracking, crash reporting, or backend of its own.
 Search queries, favorites, playlists, history, and settings stay on the device.
 Requests go to YouTube Music, googlevideo CDN hosts for audio, and LRCLIB for
-lyrics.
+lyrics. The optional AI DJ and lyric translation send only your prompt to the
+AI provider you configure; your API key stays on the device and is never
+included in exports.
 
 ## Credits
 

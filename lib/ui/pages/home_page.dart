@@ -7,8 +7,13 @@ import '../../data/api/innertube.dart';
 import '../../data/models/browse.dart';
 import '../../data/models/track.dart';
 import '../../data/music_repository.dart';
+import '../../state/daily_mix_controller.dart';
 import '../../state/library_controller.dart';
 import '../widgets/common.dart';
+import '../widgets/descent_orb.dart';
+import 'ai_dj_page.dart';
+import 'daily_descent_page.dart';
+import 'time_machine_page.dart';
 import '../widgets/media_card.dart';
 import '../widgets/section_block.dart';
 import 'explore_page.dart';
@@ -33,6 +38,9 @@ class _HomePageState extends State<HomePage>
   void initState() {
     super.initState();
     _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<DailyMixController>().ensureToday();
+    });
   }
 
   Future<void> _load({bool refresh = false}) async {
@@ -144,8 +152,30 @@ class _HomePageState extends State<HomePage>
                     label: 'Moods',
                     onTap: () => _openExplore(2),
                   ),
+                  _QuickChip(
+                    icon: Icons.auto_awesome_rounded,
+                    label: 'AI DJ',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const AiDjPage()),
+                    ),
+                  ),
+                  _QuickChip(
+                    icon: Icons.history_rounded,
+                    label: 'Time machine',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const TimeMachinePage(),
+                      ),
+                    ),
+                  ),
                 ],
               ),
+            ),
+          ),
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 14, 16, 2),
+              child: _DailyDescentCard(),
             ),
           ),
           if (history.isNotEmpty)
@@ -191,6 +221,92 @@ class _HomePageState extends State<HomePage>
               ),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
+      ),
+    );
+  }
+}
+
+class _DailyDescentCard extends StatelessWidget {
+  const _DailyDescentCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final daily = context.watch<DailyMixController>();
+    final count = daily.tracks.length;
+    final subtitle = daily.loading && count == 0
+        ? 'Forging today’s mix…'
+        : count == 0
+        ? 'Tap to pull four songs from your orbit'
+        : '$count tracks • ${daily.streak} day'
+              '${daily.streak == 1 ? '' : 's'} in the underworld';
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(hadesRadius(context) + 4),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const DailyDescentPage()),
+        ),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.surfaceContainerHigh,
+                theme.colorScheme.primary.withValues(alpha: 0.22),
+                theme.colorScheme.tertiary.withValues(alpha: 0.12),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(hadesRadius(context) + 4),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.28),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            child: Row(
+              children: [
+                const DescentOrb(size: 58),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'TODAY’S DESCENT',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          letterSpacing: 1.8,
+                          fontWeight: FontWeight.w800,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'A daily mix with a memory',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

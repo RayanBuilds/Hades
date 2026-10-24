@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants.dart';
+import '../data/api/ai_service.dart';
 import '../data/api/stream_resolver.dart';
 
 enum AppThemeMode { system, light, dark, amoled }
@@ -43,6 +44,9 @@ class SettingsController extends ChangeNotifier {
   static const _glassOpacityKey = 'settings.glassOpacity';
   static const _animationsKey = 'settings.animationsEnabled';
   static const _motionKey = 'settings.motionPreset';
+  static const _aiProviderKey = 'settings.aiProvider';
+  static const _aiApiKeyKey = 'settings.aiApiKey';
+  static const _aiModelKey = 'settings.aiModel';
 
   final SharedPreferences _prefs;
 
@@ -80,6 +84,9 @@ class SettingsController extends ChangeNotifier {
   double _glassOpacity = 0.42;
   bool _animationsEnabled = true;
   MotionPreset _motionPreset = MotionPreset.normal;
+  AiProvider _aiProvider = AiProvider.gemini;
+  String _aiApiKey = '';
+  String _aiModel = '';
 
   SettingsController(this._prefs) {
     _restore();
@@ -115,6 +122,11 @@ class SettingsController extends ChangeNotifier {
   double get glassOpacity => _glassOpacity;
   bool get animationsEnabled => _animationsEnabled;
   MotionPreset get motionPreset => _motionPreset;
+  AiProvider get aiProvider => _aiProvider;
+  String get aiApiKey => _aiApiKey;
+  String get aiModel => _aiModel;
+  AiConfig get aiConfig =>
+      AiConfig(provider: _aiProvider, apiKey: _aiApiKey, model: _aiModel);
 
   bool get isDark =>
       _themeMode == AppThemeMode.dark || _themeMode == AppThemeMode.amoled;
@@ -192,6 +204,13 @@ class SettingsController extends ChangeNotifier {
       (value) => value.name == motion,
       orElse: () => MotionPreset.normal,
     );
+    final provider = _prefs.getString(_aiProviderKey);
+    _aiProvider = AiProvider.values.firstWhere(
+      (value) => value.name == provider,
+      orElse: () => AiProvider.gemini,
+    );
+    _aiApiKey = _prefs.getString(_aiApiKeyKey) ?? '';
+    _aiModel = _prefs.getString(_aiModelKey) ?? '';
   }
 
   Future<void> setThemeMode(AppThemeMode value) async {
@@ -410,6 +429,9 @@ class SettingsController extends ChangeNotifier {
     'glassOpacity': _glassOpacity,
     'animationsEnabled': _animationsEnabled,
     'motionPreset': _motionPreset.name,
+    // API keys are intentionally not exported in backups.
+    'aiProvider': _aiProvider.name,
+    'aiModel': _aiModel,
   };
 
   Future<void> importData(Map<String, dynamic> data) async {
@@ -480,6 +502,11 @@ class SettingsController extends ChangeNotifier {
     await setMotionPreset(
       pick(MotionPreset.values, data['motionPreset'], _motionPreset),
     );
+    await setAiProvider(
+      pick(AiProvider.values, data['aiProvider'], _aiProvider),
+    );
+    final model = data['aiModel'] as String?;
+    if (model != null) await setAiModel(model);
   }
 
   Future<void> setGlassEnabled(bool value) async {
@@ -517,5 +544,28 @@ class SettingsController extends ChangeNotifier {
     _motionPreset = value;
     notifyListeners();
     await _prefs.setString(_motionKey, value.name);
+  }
+
+  Future<void> setAiProvider(AiProvider value) async {
+    if (_aiProvider == value) return;
+    _aiProvider = value;
+    notifyListeners();
+    await _prefs.setString(_aiProviderKey, value.name);
+  }
+
+  Future<void> setAiApiKey(String value) async {
+    final key = value.trim();
+    if (_aiApiKey == key) return;
+    _aiApiKey = key;
+    notifyListeners();
+    await _prefs.setString(_aiApiKeyKey, key);
+  }
+
+  Future<void> setAiModel(String value) async {
+    final model = value.trim();
+    if (_aiModel == model) return;
+    _aiModel = model;
+    notifyListeners();
+    await _prefs.setString(_aiModelKey, model);
   }
 }

@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/app_theme.dart';
 import '../../core/constants.dart';
 import '../../core/utils/format.dart';
+import '../../data/api/ai_service.dart';
 import '../../data/api/stream_resolver.dart';
 import '../../data/backup_service.dart';
 import '../../state/download_controller.dart';
@@ -19,6 +20,7 @@ import '../widgets/common.dart';
 import '../widgets/glass.dart';
 import '../widgets/sleep_timer_sheet.dart';
 import 'about_page.dart';
+import 'ai_dj_page.dart';
 import 'customize_page.dart';
 import 'downloads_view.dart';
 import 'equalizer_page.dart';
@@ -258,6 +260,94 @@ class SettingsPage extends StatelessWidget {
     await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
+  Future<void> _configureAi(BuildContext context) async {
+    final settings = context.read<SettingsController>();
+    final keyController = TextEditingController(text: settings.aiApiKey);
+    final modelController = TextEditingController(text: settings.aiModel);
+    var provider = settings.aiProvider;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('AI provider'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final option in AiProvider.values)
+                      ChoiceChip(
+                        label: Text(option.label),
+                        selected: provider == option,
+                        onSelected: (_) =>
+                            setDialogState(() => provider = option),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: keyController,
+                  obscureText: true,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  decoration: const InputDecoration(
+                    labelText: 'API key',
+                    hintText: 'Paste your key here',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: modelController,
+                  autocorrect: false,
+                  decoration: InputDecoration(
+                    labelText: 'Model (optional)',
+                    hintText: provider.defaultModel,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => _launch(provider.keyUrl),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                  label: Text('Get a ${provider.label} key'),
+                ),
+                Text(
+                  'The key stays on this device, is never exported in a '
+                  'backup, and is only sent to the provider you choose.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved == true) {
+      await settings.setAiProvider(provider);
+      await settings.setAiApiKey(keyController.text);
+      await settings.setAiModel(modelController.text);
+      if (context.mounted) showHadesSnack(context, 'AI settings saved');
+    }
+    keyController.dispose();
+    modelController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -440,6 +530,31 @@ class SettingsPage extends StatelessWidget {
           onTap: () => Navigator.of(
             context,
           ).push(MaterialPageRoute<void>(builder: (_) => const StatsPage())),
+        ),
+        const Divider(),
+        const SectionTitleRow('AI'),
+        ListTile(
+          leading: const Icon(Icons.auto_awesome_rounded),
+          title: const Text('AI DJ'),
+          subtitle: const Text(
+            'A private set built from your taste and a mood',
+          ),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute<void>(builder: (_) => const AiDjPage())),
+        ),
+        ListTile(
+          leading: const Icon(Icons.key_rounded),
+          title: const Text('AI provider'),
+          subtitle: Text(
+            settings.aiConfig.isConfigured
+                ? '${settings.aiProvider.label} • '
+                      '${settings.aiModel.isEmpty ? settings.aiProvider.defaultModel : settings.aiModel}'
+                : 'Connect Gemini or OpenAI with your own key',
+          ),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => _configureAi(context),
         ),
         const Divider(),
         const SectionTitleRow('Storage'),

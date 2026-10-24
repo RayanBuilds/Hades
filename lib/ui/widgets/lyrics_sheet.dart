@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/api/ai_service.dart';
 import '../../data/models/lyrics.dart';
 import '../../state/player_controller.dart';
+import '../../state/settings_controller.dart';
 import 'common.dart';
 import 'glass.dart';
 
@@ -32,6 +34,7 @@ class _LyricsSheetState extends State<LyricsSheet> {
   final ScrollController _scrollController = ScrollController();
   StreamSubscription<Duration>? _positionSubscription;
   int _activeIndex = -1;
+  int _activeWord = -1;
 
   @override
   void initState() {
@@ -51,8 +54,17 @@ class _LyricsSheetState extends State<LyricsSheet> {
     final lyrics = player.lyrics;
     if (lyrics == null || !lyrics.isSynced) return;
     final index = lyrics.activeLineIndex(position, offset: player.lyricsOffset);
-    if (index == _activeIndex) return;
-    setState(() => _activeIndex = index);
+    final word = index >= 0 && lyrics.lines[index].hasWordTiming
+        ? lyrics.lines[index].activeWordIndex(
+            position,
+            offset: player.lyricsOffset,
+          )
+        : -1;
+    if (index == _activeIndex && word == _activeWord) return;
+    setState(() {
+      _activeIndex = index;
+      _activeWord = word;
+    });
     if (_scrollController.hasClients && index >= 0) {
       final target = (index - 2) * 56.0;
       _scrollController.animateTo(
@@ -118,6 +130,13 @@ class _LyricsSheetState extends State<LyricsSheet> {
                   icon: const Icon(Icons.copy_rounded, size: 20),
                 ),
                 IconButton(
+                  tooltip: 'Translate lyrics',
+                  onPressed: lyrics == null
+                      ? null
+                      : () => _translateLyrics(context, lyrics),
+                  icon: const Icon(Icons.translate_rounded, size: 20),
+                ),
+                IconButton(
                   tooltip: 'Search again',
                   onPressed: () => player.fetchLyrics(force: true),
                   icon: const Icon(Icons.refresh_rounded),
@@ -166,6 +185,115 @@ class _LyricsSheetState extends State<LyricsSheet> {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _translateLyrics(BuildContext context, Lyrics lyrics) async {
+    final settings = context.read<SettingsController>();
+    if (!settings.aiConfig.isConfigured) {
+      showHadesSnack(
+        context,
+        'Add a Gemini or OpenAI key in Settings › AI first.',
+      );
+      return;
+    }
+    const languages = [
+      'English',
+      'Spanish',
+      'French',
+      'German',
+      'Portuguese',
+      'Italian',
+      'Hindi',
+      'Japanese',
+      'Korean',
+      'Chinese',
+      'Russian',
+      'Indonesian',
+      'Turkish',
+      'Vietnamese',
+    ];
+    final language = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (context) => GlassSheet(
+        child: SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const ListTile(
+                title: Text(
+                  'Translate lyrics',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: Text('Uses your AI provider and key'),
+              ),
+              for (final language in languages)
+                ListTile(
+                  title: Text(language),
+                  onTap: () => Navigator.of(context).pop(language),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (language == null || !context.mounted) return;
+
+    final body =
+        lyrics.plain ?? lyrics.lines.map((line) => line.text).join('\n');
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    String? translated;
+    String? error;
+    try {
+      translated = await AiService().translateLyrics(
+        config: settings.aiConfig,
+        lyrics: body,
+        language: language,
+      );
+    } catch (exception) {
+      error = exception.toString();
+    }
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    if (!context.mounted) return;
+    if (translated == null) {
+      showHadesSnack(context, error ?? 'Could not translate the lyrics.');
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(language),
+        content: SizedBox(
+          width: 420,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              translated!,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(height: 1.6),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () =>
+                Clipboard.setData(ClipboardData(text: translated!)),
+            icon: const Icon(Icons.copy_rounded, size: 17),
+            label: const Text('Copy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -232,6 +360,14 @@ class _LyricsSheetState extends State<LyricsSheet> {
       itemBuilder: (context, index) {
         final line = lyrics.lines[index];
         final active = index == _activeIndex;
+        final baseStyle = theme.textTheme.titleMedium!.copyWith(
+          height: 1.4,
+          fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+          color: active
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+        );
+        final text = line.text.isEmpty ? '♪' : line.text;
         return InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: () => player.seek(line.time + player.lyricsOffset),
@@ -239,14 +375,26 @@ class _LyricsSheetState extends State<LyricsSheet> {
             alignment: Alignment.centerLeft,
             child: AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 220),
-              style: theme.textTheme.titleMedium!.copyWith(
-                height: 1.4,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color: active
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-              ),
-              child: Text(line.text.isEmpty ? '♪' : line.text),
+              style: baseStyle,
+              child: active && line.hasWordTiming
+                  ? RichText(
+                      text: TextSpan(
+                        style: baseStyle,
+                        children: [
+                          for (var word = 0; word < line.words.length; word++)
+                            TextSpan(
+                              text: line.words[word].text,
+                              style: TextStyle(
+                                color: word <= _activeWord
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.onSurfaceVariant
+                                          .withValues(alpha: 0.55),
+                              ),
+                            ),
+                        ],
+                      ),
+                    )
+                  : Text(text),
             ),
           ),
         );

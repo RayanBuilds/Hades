@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
 import 'data/music_repository.dart';
+import 'state/daily_mix_controller.dart';
 import 'state/download_controller.dart';
 import 'state/library_controller.dart';
 import 'state/player_controller.dart';
@@ -29,6 +30,8 @@ Future<void> main() async {
   final library = LibraryController(prefs);
   final downloads = DownloadController(prefs, repository, settings);
   await downloads.load();
+  final daily = DailyMixController(prefs, repository, library);
+  await daily.registerVisit();
   final player = PlayerController(
     repository: repository,
     settings: settings,
@@ -44,6 +47,7 @@ Future<void> main() async {
         ChangeNotifierProvider<SettingsController>.value(value: settings),
         ChangeNotifierProvider<LibraryController>.value(value: library),
         ChangeNotifierProvider<DownloadController>.value(value: downloads),
+        ChangeNotifierProvider<DailyMixController>.value(value: daily),
         ChangeNotifierProvider<PlayerController>.value(value: player),
       ],
       child: const HadesApp(),
