@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../state/player_controller.dart';
 import '../../state/settings_controller.dart';
 import 'common.dart';
+import 'glass.dart';
 import 'track_tile.dart';
 
 Future<void> showQueueSheet(BuildContext context) {
@@ -12,7 +13,7 @@ Future<void> showQueueSheet(BuildContext context) {
     useSafeArea: true,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => const QueueSheet(),
+    builder: (_) => const GlassSheet(child: QueueSheet()),
   );
 }
 

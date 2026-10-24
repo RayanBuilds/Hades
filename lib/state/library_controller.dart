@@ -308,4 +308,76 @@ class LibraryController extends ChangeNotifier {
     _persistRecentSearches();
     notifyListeners();
   }
+
+  Map<String, dynamic> exportData() => {
+    'favorites': _favorites.map((track) => track.toJson()).toList(),
+    'playlists': _playlists.map((playlist) => playlist.toJson()).toList(),
+    'history': _history.map((entry) => entry.toJson()).toList(),
+    'playLog': _playLog.map((event) => event.toJson()).toList(),
+    'recentSearches': _recentSearches,
+  };
+
+  /// Replaces the local data with a backup. The backup is not merged so a
+  /// restore always leaves the device in the state that was exported.
+  Future<void> importData(Map<String, dynamic> data) async {
+    List<Map<String, dynamic>> maps(dynamic value) => (value as List? ?? [])
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+
+    final favorites = <Track>[];
+    final seen = <String>{};
+    for (final item in maps(data['favorites'])) {
+      final track = Track.fromJson(item);
+      if (track.id.isEmpty || !seen.add(track.id)) continue;
+      favorites.add(track);
+    }
+    final playlists = maps(
+      data['playlists'],
+    ).map(LocalPlaylist.fromJson).toList();
+    final history = maps(data['history']).map(HistoryEntry.fromJson).toList();
+    final playLog = maps(data['playLog']).map(PlayEvent.fromJson).toList();
+    final searches = (data['recentSearches'] as List? ?? [])
+        .whereType<String>()
+        .where((query) => query.trim().isNotEmpty)
+        .take(_maxRecentSearches)
+        .toList();
+
+    _favorites
+      ..clear()
+      ..addAll(favorites);
+    _playlists
+      ..clear()
+      ..addAll(playlists);
+    _history
+      ..clear()
+      ..addAll(history.take(_maxHistory));
+    _playLog
+      ..clear()
+      ..addAll(playLog.take(_maxPlayLog));
+    _recentSearches
+      ..clear()
+      ..addAll(searches);
+
+    await Future.wait([
+      _prefs.setString(
+        _favoritesKey,
+        jsonEncode(_favorites.map((track) => track.toJson()).toList()),
+      ),
+      _prefs.setString(
+        _playlistsKey,
+        jsonEncode(_playlists.map((playlist) => playlist.toJson()).toList()),
+      ),
+      _prefs.setString(
+        _historyKey,
+        jsonEncode(_history.map((entry) => entry.toJson()).toList()),
+      ),
+      _prefs.setString(
+        _playLogKey,
+        jsonEncode(_playLog.map((event) => event.toJson()).toList()),
+      ),
+      _prefs.setStringList(_recentSearchesKey, _recentSearches),
+    ]);
+    notifyListeners();
+  }
 }

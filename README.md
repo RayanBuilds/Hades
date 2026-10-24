@@ -45,12 +45,17 @@ Hades is an independent Flutter codebase written for this project.
 - Import any public YouTube or YouTube Music playlist by link
 - Download any track for offline playback, with live progress and storage usage
 - Recent searches
+- JSON backup and restore for the library, listening history, and every setting
 - In-app playback of downloaded audio when YouTube is unreachable
 
 ### Look and feel
 
 - Light, dark, and AMOLED themes, plus system theme
 - Dynamic colors extracted from the current artwork, or 9 accent presets
+- Glassmorphism with adjustable blur and opacity across the mini player,
+  navigation chrome, and every bottom sheet
+- App animations with off/subtle/normal/lively presets for page transitions,
+  staggered reveals, and micro-motion
 - Three player layouts: Classic, Widescreen, and Minimal
 - Floating or attached mini player
 - Adjustable corner radius and artwork blur

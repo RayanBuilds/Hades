@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/motion.dart';
 import '../../core/utils/format.dart';
 import '../../data/api/innertube.dart';
 import '../../data/models/browse.dart';
@@ -181,8 +182,13 @@ class _HomePageState extends State<HomePage>
               ),
             )
           else
-            for (final section in _sections!)
-              SliverToBoxAdapter(child: SectionBlock(section: section)),
+            for (var index = 0; index < _sections!.length; index++)
+              SliverToBoxAdapter(
+                child: Reveal(
+                  index: index,
+                  child: SectionBlock(section: _sections![index]),
+                ),
+              ),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ),

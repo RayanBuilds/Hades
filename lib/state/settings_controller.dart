@@ -12,6 +12,8 @@ enum MiniPlayerStyle { floating, attached }
 
 enum TrackDensity { comfortable, compact }
 
+enum MotionPreset { subtle, normal, lively }
+
 class SettingsController extends ChangeNotifier {
   static const _themeKey = 'settings.themeMode';
   static const _dynamicColorKey = 'settings.dynamicColor';
@@ -36,6 +38,11 @@ class SettingsController extends ChangeNotifier {
   static const _speedKey = 'settings.playbackSpeed';
   static const _skipSilenceKey = 'settings.skipSilence';
   static const _crossfadeKey = 'settings.crossfadeSeconds';
+  static const _glassKey = 'settings.glassEnabled';
+  static const _glassBlurKey = 'settings.glassBlur';
+  static const _glassOpacityKey = 'settings.glassOpacity';
+  static const _animationsKey = 'settings.animationsEnabled';
+  static const _motionKey = 'settings.motionPreset';
 
   final SharedPreferences _prefs;
 
@@ -68,6 +75,11 @@ class SettingsController extends ChangeNotifier {
   double _playbackSpeed = 1.0;
   bool _skipSilence = false;
   int _crossfadeSeconds = 0;
+  bool _glassEnabled = false;
+  double _glassBlur = 24;
+  double _glassOpacity = 0.42;
+  bool _animationsEnabled = true;
+  MotionPreset _motionPreset = MotionPreset.normal;
 
   SettingsController(this._prefs) {
     _restore();
@@ -98,6 +110,11 @@ class SettingsController extends ChangeNotifier {
   double get playbackSpeed => _playbackSpeed;
   bool get skipSilence => _skipSilence;
   int get crossfadeSeconds => _crossfadeSeconds;
+  bool get glassEnabled => _glassEnabled;
+  double get glassBlur => _glassBlur;
+  double get glassOpacity => _glassOpacity;
+  bool get animationsEnabled => _animationsEnabled;
+  MotionPreset get motionPreset => _motionPreset;
 
   bool get isDark =>
       _themeMode == AppThemeMode.dark || _themeMode == AppThemeMode.amoled;
@@ -163,6 +180,18 @@ class SettingsController extends ChangeNotifier {
     _playbackSpeed = (_prefs.getDouble(_speedKey) ?? 1.0).clamp(0.5, 2.0);
     _skipSilence = _prefs.getBool(_skipSilenceKey) ?? false;
     _crossfadeSeconds = (_prefs.getInt(_crossfadeKey) ?? 0).clamp(0, 12);
+    _glassEnabled = _prefs.getBool(_glassKey) ?? false;
+    _glassBlur = (_prefs.getDouble(_glassBlurKey) ?? 24).clamp(0, 60);
+    _glassOpacity = (_prefs.getDouble(_glassOpacityKey) ?? 0.42).clamp(
+      0.08,
+      0.9,
+    );
+    _animationsEnabled = _prefs.getBool(_animationsKey) ?? true;
+    final motion = _prefs.getString(_motionKey);
+    _motionPreset = MotionPreset.values.firstWhere(
+      (value) => value.name == motion,
+      orElse: () => MotionPreset.normal,
+    );
   }
 
   Future<void> setThemeMode(AppThemeMode value) async {
@@ -350,5 +379,143 @@ class SettingsController extends ChangeNotifier {
     _crossfadeSeconds = seconds;
     notifyListeners();
     await _prefs.setInt(_crossfadeKey, seconds);
+  }
+
+  Map<String, dynamic> exportData() => {
+    'themeMode': _themeMode.name,
+    'dynamicColor': _dynamicColor,
+    'accentIndex': _accentIndex,
+    'playerLayout': _playerLayout.name,
+    'miniPlayerStyle': _miniPlayerStyle.name,
+    'cornerRadius': _cornerRadius,
+    'blurAmount': _blurAmount,
+    'visibleTabs': _visibleTabs,
+    'density': _density.name,
+    'artworkBackground': _artworkBackground,
+    'audioQuality': _audioQuality.name,
+    'downloadQuality': _downloadQuality.name,
+    'autoplay': _autoplay,
+    'lyricsEnabled': _lyricsEnabled,
+    'animatedArt': _animatedArt,
+    'sponsorBlock': _sponsorBlock,
+    'returnDislike': _returnDislike,
+    'eqEnabled': _eqEnabled,
+    'eqPreset': _eqPreset,
+    'eqGains': _eqGains,
+    'playbackSpeed': _playbackSpeed,
+    'skipSilence': _skipSilence,
+    'crossfadeSeconds': _crossfadeSeconds,
+    'glassEnabled': _glassEnabled,
+    'glassBlur': _glassBlur,
+    'glassOpacity': _glassOpacity,
+    'animationsEnabled': _animationsEnabled,
+    'motionPreset': _motionPreset.name,
+  };
+
+  Future<void> importData(Map<String, dynamic> data) async {
+    T pick<T extends Enum>(List<T> values, dynamic name, T fallback) {
+      for (final value in values) {
+        if (value.name == name) return value;
+      }
+      return fallback;
+    }
+
+    double? number(String key) => (data[key] as num?)?.toDouble();
+    int? integer(String key) => (data[key] as num?)?.toInt();
+    bool? flag(String key) => data[key] is bool ? data[key] as bool : null;
+
+    await setThemeMode(
+      pick(AppThemeMode.values, data['themeMode'], AppThemeMode.system),
+    );
+    await setDynamicColor(flag('dynamicColor') ?? _dynamicColor);
+    final accent = integer('accentIndex');
+    if (accent != null) await setAccentIndex(accent);
+    await setPlayerLayout(
+      pick(PlayerLayout.values, data['playerLayout'], _playerLayout),
+    );
+    await setMiniPlayerStyle(
+      pick(MiniPlayerStyle.values, data['miniPlayerStyle'], _miniPlayerStyle),
+    );
+    final radius = number('cornerRadius');
+    if (radius != null) await setCornerRadius(radius.clamp(0, 40));
+    final blur = number('blurAmount');
+    if (blur != null) await setBlurAmount(blur.clamp(0, 80));
+    final tabs = (data['visibleTabs'] as List?)
+        ?.whereType<String>()
+        .where((id) => navTabs.any((tab) => tab.id == id))
+        .toList();
+    if (tabs != null && tabs.isNotEmpty) await setVisibleTabs(tabs);
+    await setDensity(pick(TrackDensity.values, data['density'], _density));
+    await setArtworkBackground(flag('artworkBackground') ?? _artworkBackground);
+    await setAudioQuality(
+      pick(AudioQuality.values, data['audioQuality'], _audioQuality),
+    );
+    await setDownloadQuality(
+      pick(AudioQuality.values, data['downloadQuality'], _downloadQuality),
+    );
+    await setAutoplay(flag('autoplay') ?? _autoplay);
+    await setLyricsEnabled(flag('lyricsEnabled') ?? _lyricsEnabled);
+    await setAnimatedArt(flag('animatedArt') ?? _animatedArt);
+    await setSponsorBlock(flag('sponsorBlock') ?? _sponsorBlock);
+    await setReturnDislike(flag('returnDislike') ?? _returnDislike);
+    await setEqualizerEnabled(flag('eqEnabled') ?? _eqEnabled);
+    final gains = (data['eqGains'] as List?)
+        ?.whereType<num>()
+        .map((gain) => gain.toDouble())
+        .toList();
+    if (gains != null && gains.isNotEmpty) {
+      await setEqualizerPreset(data['eqPreset'] as String? ?? 'Custom', gains);
+    }
+    final speed = number('playbackSpeed');
+    if (speed != null) await setPlaybackSpeed(speed);
+    await setSkipSilence(flag('skipSilence') ?? _skipSilence);
+    final crossfade = integer('crossfadeSeconds');
+    if (crossfade != null) await setCrossfadeSeconds(crossfade);
+    await setGlassEnabled(flag('glassEnabled') ?? _glassEnabled);
+    final glassBlur = number('glassBlur');
+    if (glassBlur != null) await setGlassBlur(glassBlur);
+    final glassOpacity = number('glassOpacity');
+    if (glassOpacity != null) await setGlassOpacity(glassOpacity);
+    await setAnimationsEnabled(flag('animationsEnabled') ?? _animationsEnabled);
+    await setMotionPreset(
+      pick(MotionPreset.values, data['motionPreset'], _motionPreset),
+    );
+  }
+
+  Future<void> setGlassEnabled(bool value) async {
+    if (_glassEnabled == value) return;
+    _glassEnabled = value;
+    notifyListeners();
+    await _prefs.setBool(_glassKey, value);
+  }
+
+  Future<void> setGlassBlur(double value) async {
+    final blur = value.clamp(0.0, 60.0).toDouble();
+    if (_glassBlur == blur) return;
+    _glassBlur = blur;
+    notifyListeners();
+    await _prefs.setDouble(_glassBlurKey, blur);
+  }
+
+  Future<void> setGlassOpacity(double value) async {
+    final opacity = value.clamp(0.08, 0.9).toDouble();
+    if (_glassOpacity == opacity) return;
+    _glassOpacity = opacity;
+    notifyListeners();
+    await _prefs.setDouble(_glassOpacityKey, opacity);
+  }
+
+  Future<void> setAnimationsEnabled(bool value) async {
+    if (_animationsEnabled == value) return;
+    _animationsEnabled = value;
+    notifyListeners();
+    await _prefs.setBool(_animationsKey, value);
+  }
+
+  Future<void> setMotionPreset(MotionPreset value) async {
+    if (_motionPreset == value) return;
+    _motionPreset = value;
+    notifyListeners();
+    await _prefs.setString(_motionKey, value.name);
   }
 }

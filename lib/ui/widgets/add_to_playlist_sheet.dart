@@ -4,13 +4,14 @@ import 'package:provider/provider.dart';
 import '../../data/models/track.dart';
 import '../../state/library_controller.dart';
 import 'common.dart';
+import 'glass.dart';
 
 Future<void> showAddToPlaylistSheet(BuildContext context, Track track) {
   return showModalBottomSheet<void>(
     context: context,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (_) => _AddToPlaylistSheet(track: track),
+    builder: (_) => GlassSheet(child: _AddToPlaylistSheet(track: track)),
   );
 }
 

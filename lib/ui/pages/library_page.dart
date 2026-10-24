@@ -13,6 +13,7 @@ import '../../state/player_controller.dart';
 import '../widgets/add_to_playlist_sheet.dart';
 import '../widgets/artwork.dart';
 import '../widgets/common.dart';
+import '../widgets/glass.dart';
 import '../widgets/track_tile.dart';
 import 'downloads_view.dart';
 import 'playlist_page.dart';
@@ -258,21 +259,23 @@ class _PlaylistsTab extends StatelessWidget {
       context: context,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit_rounded),
-              title: const Text('Rename playlist'),
-              onTap: () => Navigator.of(context).pop('rename'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline_rounded),
-              title: const Text('Delete playlist'),
-              onTap: () => Navigator.of(context).pop('delete'),
-            ),
-          ],
+      builder: (context) => GlassSheet(
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit_rounded),
+                title: const Text('Rename playlist'),
+                onTap: () => Navigator.of(context).pop('rename'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded),
+                title: const Text('Delete playlist'),
+                onTap: () => Navigator.of(context).pop('delete'),
+              ),
+            ],
+          ),
         ),
       ),
     );

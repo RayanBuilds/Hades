@@ -13,6 +13,7 @@ import '../navigation.dart';
 import 'add_to_playlist_sheet.dart';
 import 'artwork.dart';
 import 'common.dart';
+import 'glass.dart';
 
 Future<void> showTrackActions(
   BuildContext context,
@@ -24,7 +25,9 @@ Future<void> showTrackActions(
     useSafeArea: true,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => _TrackActionsSheet(track: track, queue: queue),
+    builder: (_) => GlassSheet(
+      child: _TrackActionsSheet(track: track, queue: queue),
+    ),
   );
 }
 

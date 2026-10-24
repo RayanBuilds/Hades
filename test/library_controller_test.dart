@@ -92,4 +92,29 @@ void main() {
     expect(restored.isFavorite('a'), isTrue);
     expect(restored.playlists.single.name, 'Saved');
   });
+
+  test('export and import round-trip replaces local data', () async {
+    final original = await build();
+    original.toggleFavorite(trackA);
+    original.createPlaylist('Backup mix', tracks: const [trackB]);
+    original.recordPlay(trackC);
+    original.addRecentSearch('hades');
+    final backup = original.exportData();
+
+    final restored = await build();
+    restored.toggleFavorite(trackC);
+    restored.createPlaylist('Should disappear');
+    await restored.importData(backup);
+
+    expect(restored.favorites.map((track) => track.id), ['a']);
+    expect(restored.playlists.single.name, 'Backup mix');
+    expect(restored.playlists.single.tracks.single.id, 'b');
+    expect(restored.history.single.track.id, 'c');
+    expect(restored.playLog.single.track.id, 'c');
+    expect(restored.recentSearches, ['hades']);
+
+    final reloaded = await build();
+    expect(reloaded.isFavorite('c'), isFalse);
+    expect(reloaded.playlists.single.name, 'Backup mix');
+  });
 }

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/lyrics.dart';
 import '../../state/player_controller.dart';
 import 'common.dart';
+import 'glass.dart';
 
 Future<void> showLyricsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -14,7 +15,7 @@ Future<void> showLyricsSheet(BuildContext context) {
     useSafeArea: true,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => const LyricsSheet(),
+    builder: (_) => const GlassSheet(child: LyricsSheet()),
   );
 }
 

@@ -9,6 +9,7 @@ import '../pages/library_page.dart';
 import '../pages/search_page.dart';
 import '../pages/settings_page.dart';
 import '../widgets/common.dart';
+import '../widgets/glass.dart';
 import '../widgets/mini_player.dart';
 
 class AppShell extends StatefulWidget {
@@ -62,24 +63,28 @@ class _AppShellState extends State<AppShell> {
           return Scaffold(
             body: Row(
               children: [
-                NavigationRail(
-                  selectedIndex: index,
-                  onDestinationSelected: (value) => _select(tabs[value].id),
-                  labelType: constraints.maxWidth >= 1120
-                      ? NavigationRailLabelType.all
-                      : NavigationRailLabelType.selected,
-                  leading: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    child: AppLogo(size: 42),
+                GlassSurface(
+                  borderRadius: BorderRadius.zero,
+                  tint: Theme.of(context).colorScheme.surfaceContainerLow,
+                  child: NavigationRail(
+                    selectedIndex: index,
+                    onDestinationSelected: (value) => _select(tabs[value].id),
+                    labelType: constraints.maxWidth >= 1120
+                        ? NavigationRailLabelType.all
+                        : NavigationRailLabelType.selected,
+                    leading: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      child: AppLogo(size: 42),
+                    ),
+                    destinations: [
+                      for (final tab in tabs)
+                        NavigationRailDestination(
+                          icon: Icon(tab.icon),
+                          selectedIcon: Icon(tab.selectedIcon),
+                          label: Text(tab.label),
+                        ),
+                    ],
                   ),
-                  destinations: [
-                    for (final tab in tabs)
-                      NavigationRailDestination(
-                        icon: Icon(tab.icon),
-                        selectedIcon: Icon(tab.selectedIcon),
-                        label: Text(tab.label),
-                      ),
-                  ],
                 ),
                 Expanded(
                   child: Column(
@@ -102,17 +107,23 @@ class _AppShellState extends State<AppShell> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const MiniPlayer(),
-                NavigationBar(
-                  selectedIndex: index,
-                  onDestinationSelected: (value) => _select(tabs[value].id),
-                  destinations: [
-                    for (final tab in tabs)
-                      NavigationDestination(
-                        icon: Icon(tab.icon),
-                        selectedIcon: Icon(tab.selectedIcon),
-                        label: tab.label,
-                      ),
-                  ],
+                GlassSurface(
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(hadesRadius(context) + 8),
+                  ),
+                  tint: Theme.of(context).colorScheme.surfaceContainer,
+                  child: NavigationBar(
+                    selectedIndex: index,
+                    onDestinationSelected: (value) => _select(tabs[value].id),
+                    destinations: [
+                      for (final tab in tabs)
+                        NavigationDestination(
+                          icon: Icon(tab.icon),
+                          selectedIcon: Icon(tab.selectedIcon),
+                          label: tab.label,
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),

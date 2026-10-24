@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../state/player_controller.dart';
+import 'glass.dart';
 
 Future<void> showSleepTimerSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (_) => const SleepTimerSheet(),
+    builder: (_) => const GlassSheet(child: SleepTimerSheet()),
   );
 }
 

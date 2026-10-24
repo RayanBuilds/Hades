@@ -175,6 +175,65 @@ class CustomizePage extends StatelessWidget {
             onChanged: settings.setAnimatedArt,
           ),
           const Divider(),
+          const SectionTitleRow('Glass & motion'),
+          SwitchListTile(
+            secondary: const Icon(Icons.blur_on_rounded),
+            title: const Text('Glassmorphism'),
+            subtitle: const Text(
+              'Frost the mini player, navigation bar, and bottom sheets',
+            ),
+            value: settings.glassEnabled,
+            onChanged: settings.setGlassEnabled,
+          ),
+          if (settings.glassEnabled) ...[
+            _SliderTile(
+              icon: Icons.filter_alt_outlined,
+              title: 'Glass blur',
+              value: settings.glassBlur,
+              min: 0,
+              max: 60,
+              divisions: 20,
+              label: '${settings.glassBlur.round()}',
+              onChanged: settings.setGlassBlur,
+            ),
+            _SliderTile(
+              icon: Icons.opacity_rounded,
+              title: 'Glass opacity',
+              value: settings.glassOpacity,
+              min: 0.08,
+              max: 0.9,
+              divisions: 16,
+              label: '${(settings.glassOpacity * 100).round()}%',
+              onChanged: settings.setGlassOpacity,
+            ),
+          ],
+          SwitchListTile(
+            secondary: const Icon(Icons.animation_rounded),
+            title: const Text('App animations'),
+            subtitle: const Text('Page transitions, reveals, and micro-motion'),
+            value: settings.animationsEnabled,
+            onChanged: settings.setAnimationsEnabled,
+          ),
+          if (settings.animationsEnabled)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  for (final preset in MotionPreset.values)
+                    ChoiceChip(
+                      label: Text(switch (preset) {
+                        MotionPreset.subtle => 'Subtle',
+                        MotionPreset.normal => 'Normal',
+                        MotionPreset.lively => 'Lively',
+                      }),
+                      selected: settings.motionPreset == preset,
+                      onSelected: (_) => settings.setMotionPreset(preset),
+                    ),
+                ],
+              ),
+            ),
+          const Divider(),
           const SectionTitleRow('Lists'),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),

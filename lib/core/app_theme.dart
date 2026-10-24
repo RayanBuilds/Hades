@@ -1,7 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'constants.dart';
+import 'motion.dart';
 import '../state/settings_controller.dart';
 
 @immutable
@@ -46,6 +46,7 @@ ThemeData buildHadesTheme({
   Color? artworkColor,
 }) {
   final amoled = settings.themeMode == AppThemeMode.amoled;
+  final glass = settings.glassEnabled;
   final seed = settings.dynamicColor && artworkColor != null
       ? artworkColor
       : settings.accent.color;
@@ -109,8 +110,10 @@ ThemeData buildHadesTheme({
       ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
-      backgroundColor: scheme.surfaceContainerLow,
-      modalBackgroundColor: scheme.surfaceContainerLow,
+      backgroundColor: glass ? Colors.transparent : scheme.surfaceContainerLow,
+      modalBackgroundColor: glass
+          ? Colors.transparent
+          : scheme.surfaceContainerLow,
       surfaceTintColor: Colors.transparent,
       showDragHandle: true,
       dragHandleColor: scheme.outlineVariant,
@@ -121,7 +124,9 @@ ThemeData buildHadesTheme({
     navigationBarTheme: NavigationBarThemeData(
       height: 68,
       elevation: 0,
-      backgroundColor: amoled
+      backgroundColor: glass
+          ? Colors.transparent
+          : amoled
           ? Colors.black
           : scheme.surfaceContainer.withValues(alpha: 0.96),
       surfaceTintColor: Colors.transparent,
@@ -147,7 +152,11 @@ ThemeData buildHadesTheme({
       ),
     ),
     navigationRailTheme: NavigationRailThemeData(
-      backgroundColor: amoled ? Colors.black : scheme.surfaceContainerLow,
+      backgroundColor: glass
+          ? Colors.transparent
+          : amoled
+          ? Colors.black
+          : scheme.surfaceContainerLow,
       indicatorColor: scheme.primaryContainer,
       indicatorShape: RoundedRectangleBorder(borderRadius: pill),
       selectedLabelTextStyle: base.textTheme.labelMedium?.copyWith(
@@ -246,8 +255,11 @@ ThemeData buildHadesTheme({
     ),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
-        TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.android: HadesPageTransitionsBuilder(),
+        TargetPlatform.iOS: HadesPageTransitionsBuilder(),
+        TargetPlatform.macOS: HadesPageTransitionsBuilder(),
+        TargetPlatform.windows: HadesPageTransitionsBuilder(),
+        TargetPlatform.linux: HadesPageTransitionsBuilder(),
       },
     ),
     extensions: [
