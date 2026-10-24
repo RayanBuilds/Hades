@@ -1,0 +1,15 @@
+{
+  "name": "Flutter + Node.js",
+  "image": "ghcr.io/cirruslabs/flutter:stable",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.flutter",
+        "Dart-Code.dart-code"
+      ]
+    }
+  },
+
+  "postCreateCommand": "apt-get update && apt-get install -y nodejs npm && flutter pub get"
+}
