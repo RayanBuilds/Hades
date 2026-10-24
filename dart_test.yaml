@@ -1,0 +1,3 @@
+tags:
+  network:
+    skip: "Live YouTube/LRCLIB test. Run with: flutter test --run-skipped -t network"
