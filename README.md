@@ -35,7 +35,8 @@ Hades is an independent Flutter codebase written for this project.
   ±0.5 s timing offset, full-screen mode, copy, word-by-word highlighting, and
   optional AI translation
 - SponsorBlock auto-skip and Return YouTube Dislike counts
-- Ten-band device equalizer with presets and a custom curve
+- Ten-band device equalizer with presets, a custom curve, and AutoEq
+  GraphicEQ profile import
 - Listening stats: plays, top artists and tracks, a 14-day chart, a listening
   clock, and a period recap
 

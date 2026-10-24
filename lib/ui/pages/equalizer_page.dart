@@ -1,6 +1,10 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/autoeq.dart';
 import '../../core/equalizer_presets.dart';
 import '../../state/player_controller.dart';
 import '../../state/settings_controller.dart';
@@ -30,6 +34,53 @@ class _EqualizerPageState extends State<EqualizerPage> {
       return '${value.toStringAsFixed(value >= 10 ? 0 : 1)}k';
     }
     return '${hertz.round()}';
+  }
+
+  Future<void> _importAutoEq(BuildContext context) async {
+    final player = context.read<PlayerController>();
+    final parameters = player.equalizerParameters;
+    if (parameters == null) {
+      showHadesSnack(
+        context,
+        'Play a track once so Android can expose the equalizer bands.',
+      );
+      return;
+    }
+    try {
+      final file = await FilePicker.pickFile(
+        dialogTitle: 'Choose an AutoEq GraphicEQ profile',
+        type: FileType.custom,
+        allowedExtensions: ['txt', 'csv'],
+      );
+      if (file == null || !context.mounted) return;
+      final profile = parseAutoEq(utf8.decode(await file.readAsBytes()));
+      if (!context.mounted) return;
+      if (profile == null) {
+        showHadesSnack(
+          context,
+          'That file does not contain a GraphicEQ profile. Use AutoEq\u2019s '
+          'GraphicEQ.txt rather than ParametricEQ.txt.',
+        );
+        return;
+      }
+      final gains = autoEqGainsForBands(
+        profile,
+        parameters.bands.map((band) => band.centerFrequency).toList(),
+        minGain: parameters.minDecibels,
+        maxGain: parameters.maxDecibels,
+      );
+      setState(_drafts.clear);
+      await player.applyEqualizerGains('AutoEq', gains);
+      if (!context.mounted) return;
+      showHadesSnack(
+        context,
+        'AutoEq applied: ${profile.points} measured points mapped to '
+        '${gains.length} bands.',
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      showHadesSnack(context, 'Could not import that profile: $error');
+    }
   }
 
   @override
@@ -120,6 +171,28 @@ class _EqualizerPageState extends State<EqualizerPage> {
                   label: const Text('Custom'),
                   selected: settings.eqPreset == 'Custom',
                   onSelected: null,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => _importAutoEq(context),
+                  icon: const Icon(Icons.headphones_rounded, size: 18),
+                  label: const Text('Import AutoEq profile'),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Use a GraphicEQ.txt from the AutoEq project.',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               ],
             ),

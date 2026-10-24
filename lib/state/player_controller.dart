@@ -433,6 +433,27 @@ class PlayerController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Applies an explicit curve (for example an imported AutoEq profile) and
+  /// stores it under [name]. [gains] must already match the device band count.
+  Future<void> applyEqualizerGains(String name, List<double> gains) async {
+    final parameters = _equalizerParameters;
+    if (parameters == null || gains.length != parameters.bands.length) return;
+    await settings.setEqualizerPreset(name, gains);
+    await settings.setEqualizerEnabled(true);
+    try {
+      await _equalizer.setEnabled(true);
+      for (var index = 0; index < parameters.bands.length; index++) {
+        final value = gains[index]
+            .clamp(parameters.minDecibels, parameters.maxDecibels)
+            .toDouble();
+        await parameters.bands[index].setGain(value);
+      }
+    } catch (_) {
+      // Ignore platforms without a working equalizer.
+    }
+    notifyListeners();
+  }
+
   Future<void> setEqualizerBandGain(int index, double gain) async {
     final parameters = _equalizerParameters;
     if (parameters == null || index < 0 || index >= parameters.bands.length) {
